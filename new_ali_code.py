@@ -11,6 +11,11 @@ in_jf          = sys.argv[3]
 flanking_bp    = int(20000)
 k = int(15)
 
+#in_fa          = "/sc/orga/scratch/webste01/TRF_analysis/data/u00012crpx_c_025914.fa"
+#in_trf         = "/sc/orga/scratch/webste01/TRF_analysis/results/trf_results/u00012crpx_c_025914.fa_out"
+#in_jf          = "/sc/orga/scratch/webste01/TRF_analysis/results/jellyfish_results/high_freq_kmers.txt"
+
+
 
 #Get the isolate name and set the name of the outfile
 tmp= os.path.basename(os.path.normpath(in_fa))
@@ -61,30 +66,36 @@ def read_trf_and_find_kmer (in_trf, pos_kmer_dict, flank):
 			if not l.lstrip().startswith('@'):
 				l=l.strip().split()
 				start = int(l[0])
-				print start
+				#print "start="
+				#print start
 				end = int(l[1])
-				print end
+				#print "end="
+				#print end
 				repeat = str(l[13]).lower()
 				# find closest upstream kmer
 				start_index = bisect.bisect_left(kmer_pos_sorted,start-1)
-				k1_pos = kmer_pos_sorted[start_index]
-				print k1_pos
+				k1_pos = kmer_pos_sorted[start_index-1]
+				#print "k1 pos (closest upstream kmer)="
+				#print k1_pos
 				k1 = pos_kmer_dict[k1_pos]
-				print  k1
+				#print  k1
 				# find closest downstream kmer
 				end_index = bisect.bisect_right(kmer_pos_sorted,end+1)
 				k2_pos = kmer_pos_sorted[end_index]
 				k2 = pos_kmer_dict[k2_pos]
+				#print "k2 pos (closest downstream kmer)="
+                                #print k2_pos
+				#print k2
 				ins_length = abs(k2_pos - k1_pos)
 				if ins_length > 0:
 				# Check to see if fullfills flank criteria i.e. the repeat must fall within flank bp of start/end of repeats
 					if abs(start-k1_pos) > flank:
-						print "larger region"
-						print abs(start-k1_pos)
+						#print "larger region"
+						#print abs(start-k1_pos)
 						b_file.write("%s,%s,%d,%d,%d,%s,%s \n" % (k1,k2,k1_pos,k2_pos,ins_length,repeat,isolate))
 					elif abs(end-k2_pos) > flank:
-						print "larger region"
-						print abs(end-k2_pos)
+						#print "larger region"
+						#print abs(end-k2_pos)
 						b_file.write("%s,%s,%d,%d,%d,%s,%s \n" % (k1,k2,k1_pos,k2_pos,ins_length,repeat,isolate))
 					else:
 						ins_seq = get_seq_btw_2coords(k1_pos,k2_pos)
@@ -96,8 +107,8 @@ pos_kmer_dict = build_kmer_dict(in_fa,k,kmers)
 #output file:
 with open(out_name, 'w') as a_file:
 	with open(out_name_2, 'w') as b_file:
-		a_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,insertion_seq,trf_repeat,isolate")
-	        b_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,trf_repeat,isolate")
+		a_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,insertion_seq,trf_repeat")
+	        b_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,trf_repeat")
 		a_file.write('\n')
 		b_file.write('\n')
 		read_trf_and_find_kmer(in_trf, pos_kmer_dict, flanking_bp)
