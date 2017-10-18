@@ -96,8 +96,8 @@ pos_kmer_dict = build_kmer_dict(in_fa,k,kmers)
 #output file:
 with open(out_name, 'w') as a_file:
 	with open(out_name_2, 'w') as b_file:
-		a_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,insertion_seq,trf_repeat")
-	        b_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,trf_repeat")
+		a_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,insertion_seq,trf_repeat,isolate")
+	        b_file.write("K1,K2,start_pos_k1,end_pos_k2,len_of_insertion_seq,trf_repeat,isolate")
 		a_file.write('\n')
 		b_file.write('\n')
 		read_trf_and_find_kmer(in_trf, pos_kmer_dict, flanking_bp)
