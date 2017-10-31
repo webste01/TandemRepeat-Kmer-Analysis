@@ -7,7 +7,6 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 
 in_fa = sys.argv[1] #input fasta sequence
-#k1k2   = "/sc/orga/scratch/webste01/TRF_analysis/results/insertion_sequences/all_k1k2_pairs.txt"
 k1k2 = sys.argv[2]
 k=15
 
@@ -19,16 +18,11 @@ tmp= os.path.basename(os.path.normpath(in_fa))
 isolate = str(tmp).split('.')[0]
 
 #Fasta reader, read in fasta and then get the reverse complement
-def fasta_reader(in_fa,rc):
+def fasta_reader(in_fa):
 	full_fasta_seq = SeqIO.parse(open(in_fa),'fasta')
 	for fasta in full_fasta_seq:
 		fa_string = str(fasta.seq)
-	if str(rc) == "yes":
-		rc_fa_string = str(fasta.seq.reverse_complement())
-		return rc_fa_string
-	else:	
-		return fa_string
-
+	return fa_string
 #Checks if a Kmer is in a string sequence, returns a list of start positions if the kmer is in the sequence, returns false is the kmer is not in the sequence
 def kmer_check(seq,mer):
 	index = 0
@@ -54,42 +48,45 @@ def get_seq_btw_2coords(fasta_seq,start_coord,end_coord):
 out_file = open(str(isolate) + "ins_seqs.csv",'w')
 out_file.write("k1_k2,k1_start,k2_end,insertion_sequence,insertion_sequence_length,isolate,orientation \n")
 
+i = 0
+k = 0
+j = 0
+z =0
 with open(k1k2) as of:
         for l in of:
+		k = k+1
                 l = l.strip().split("_")
-                k1= l[0].lower() 
+                k1= l[0].lower()
                 k2= l[1].lower()
-		fasta    = fasta_reader(in_fa,"no")
-                rc_fasta = fasta_reader(in_fa,"yes") #Get the reverse complement of the sequence
+		k2 = k2.split()[0]
+		fasta    = fasta_reader(in_fa)
 		if kmer_check(fasta,k1): #Check to see if K1 is in the fasta
+			i = i +1
 			orientation = "forward"
 			k1_start = kmer_check(fasta,k1) 
 			k1_start_inclusive = int(k1_start - k)
 			if kmer_check(fasta,k2): #Check to see if K2 is in the fasta
                         	k2_start = kmer_check(fasta,k2)
+				j = j +1	
 				k2_end = int(k2_start)
 				ins_seq = get_seq_btw_2coords(fasta,k1_start_inclusive,k2_end)
 				ins_seq_length = len(ins_seq)
 				if ins_seq_length < x:
 					out_file.write("%s,%s,%s,%s,%s,%s,%s \n" % (str(k1) + "_" + str(k2),k1_start_inclusive,k2_end,ins_seq,ins_seq_length,isolate,orientation))
+				else:
+					print "too long!"
+					print ins_seq_length
+					z = z + 1
 				
 			else:
 				out_file.write("%s,%s,%s,%s,%s,%s,%s \n" % (str(k1) + "_" + str(k2),k1_start,"0","0","0",isolate,orientation))	
-		elif kmer_check(rc_fasta,k1): #Check to see if K1 is in the reverse complement of the sequence if it is not in the forward orientation
-			orientation = "reverse"
-			k1_rc_start = kmer_check(rc_fasta,k1)
-			k1_rc_start_inclusive = int(k1_rc_start - k)
-			if kmer_check(rc_fasta,k2): #Check to see if K2 is in the reverse complement of the fasta
-				k2_rc_start = kmer_check(rc_fasta,k2)
-				k2_rc_end = k2_rc_start 
-				ins_seq = get_seq_btw_2coords(rc_fasta,k1_rc_start_inclusive,k2_rc_end)
-				ins_seq_length = len(ins_seq)
-				if ins_seq_length < x:
-					out_file.write("%s,%s,%s,%s,%s,%s,%s \n" % (str(k1) + "_" + str(k2),k1_rc_start,k2_rc_end,ins_seq,ins_seq_length,isolate,orientation))
-			else:
-                                out_file.write("%s,%s,%s,%s,%s,%s,%s \n" % (str(k1) + "_" + str(k2),k1_rc_start,"0","0","0",isolate,orientation))          
-
-
-                        		
 
 of.close()
+print "number of times k1"
+print i
+print "number of times K2"
+print j
+print "number of pairs"
+print k
+print "number of times the insertoin sequence has been >2000"
+print z
