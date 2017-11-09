@@ -5,11 +5,11 @@ import csv
 from Bio import SeqIO
 from Bio.Seq import Seq
 #Script to get 200bp flanking region of each tandem repeat, and step through each repeat for the closest kmer
-#Also extract the sequence between the kmers (to later be compared for similarity) 
 in_fa          = sys.argv[1]
 in_trf         = sys.argv[2]
-in_jf          = sys.argv[3]
-flanking_bp    = int(20000)
+in_kmers          = sys.argv[3]
+flanking_bp = int(sys.argv[4])
+#flanking_bp    = int(2000)
 k=int(15)
 
 tmp= os.path.basename(os.path.normpath(in_fa))
@@ -26,23 +26,21 @@ kmers=[]
 #idictionary of Tuple that is keyed upon [leftmer,rightmer,tandem repeat] with the corresponding isolate name as the value
 d={}
 
-with open(in_jf) as jellyfish:
-        for l in jellyfish:
+with open(in_kmers) as mers:
+        for l in mers:
                 l = l.strip().split()
-                kmers.append(l[0].lower())
+                kmers.append(l[1].lower())
 
 kmers_set = set(kmers)
-y=0
-z=0
 
 def find_kmer_in_seq(repeat,start_coord,end_coord,isolate):
 #'''given two sequences that flank the region with a TR and the kmers from the list of all high frequency kmers, get the kmer closest to the end of the upstream flanking sequence and the kmer closest to the start of the downstream flanking sequence'''
         downstream_kmers = {}
         upstream_kmers ={}
 	upstream_start = int(end_coord)
-	upstream_end = int(end_coord + 20000)
+	upstream_end = int(end_coord + flanking_bp)
 	downstream_end = int(start_coord)
-	downstream_start = int(start_coord - 20000)
+	downstream_start = int(start_coord - flanking_bp)
 	if downstream_start < 1:
 		downstream_end = 1
         for i in range (upstream_start,upstream_end):
@@ -92,17 +90,9 @@ with open(out_name, 'w') as a_file:
         utr = str(result[0][1]) #Kmer closest downstream to TR
 	min_downmer_start = str(result[0][2])
 	max_upmer_end = str(result[0][3])
-	if utr !="0":
-		y = y+1
-	if dtr !="0":
-		z = z+1
         repeat = str(result[0][4]) #TR
         iso = result[1] #Isolate
         final = ','.join([dtr,utr,min_downmer_start,max_upmer_end,repeat,iso])
         a_file.write(final + '\n')
-print "number of kmers found in upstream sequence"
-print y
-print "number of kmers found in downstream sequence"
-print z
 a_file.close()
 

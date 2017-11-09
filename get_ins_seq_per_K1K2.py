@@ -48,26 +48,20 @@ def get_seq_btw_2coords(fasta_seq,start_coord,end_coord):
 out_file = open(str(isolate) + "ins_seqs.csv",'w')
 out_file.write("k1_k2,k1_start,k2_end,insertion_sequence,insertion_sequence_length,isolate,orientation \n")
 
-i = 0
-k = 0
-j = 0
-z =0
 with open(k1k2) as of:
         for l in of:
-		k = k+1
-                l = l.strip().split("_")
+                l = l.strip().split()
                 k1= l[0].lower()
+		print k1
                 k2= l[1].lower()
-		k2 = k2.split()[0]
+		print k2
 		fasta    = fasta_reader(in_fa)
 		if kmer_check(fasta,k1): #Check to see if K1 is in the fasta
-			i = i +1
 			orientation = "forward"
 			k1_start = kmer_check(fasta,k1) 
 			k1_start_inclusive = int(k1_start - k)
 			if kmer_check(fasta,k2): #Check to see if K2 is in the fasta
                         	k2_start = kmer_check(fasta,k2)
-				j = j +1	
 				k2_end = int(k2_start)
 				ins_seq = get_seq_btw_2coords(fasta,k1_start_inclusive,k2_end)
 				ins_seq_length = len(ins_seq)
@@ -76,17 +70,8 @@ with open(k1k2) as of:
 				else:
 					print "too long!"
 					print ins_seq_length
-					z = z + 1
 				
 			else:
 				out_file.write("%s,%s,%s,%s,%s,%s,%s \n" % (str(k1) + "_" + str(k2),k1_start,"0","0","0",isolate,orientation))	
 
 of.close()
-print "number of times k1"
-print i
-print "number of times K2"
-print j
-print "number of pairs"
-print k
-print "number of times the insertoin sequence has been >2000"
-print z

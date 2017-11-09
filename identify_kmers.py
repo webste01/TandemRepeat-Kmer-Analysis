@@ -17,11 +17,13 @@ seq = seq.upper()
 kmer_counter = Counter()
 
 # get forward kmers                                                                                                                                                       
-for i in range(len(seq)):
+for i in range(len(seq)-k+1):
 	kmer = seq[i:i+k]
-	outfile.write(kmer.lower())
+	if len(kmer) != k:
+		print "found a kmer not equal to k!"
+    	kmer_counter[kmer] += 1
+	outfile.write(kmer)
 	outfile.write('\n')
-	kmer_counter[kmer] += 1
 
 # reverse and add reverse kmers                                                                                                                                           
 rc_map = dict(zip('ACGT', 'TGCA'))
@@ -30,11 +32,14 @@ def rc (s):
 	return ''.join(map(lambda x: rc_map[x], s[::-1]))
 
 rc_seq = rc(seq)
-for i in range(len(rc_seq)):
+for i in range(len(rc_seq)-k+1):
 	kmer = rc_seq[i:i+k]
-	outfile.write(kmer.lower())
-	outfile.write('\n')
+	if len(kmer) != k:
+		print "found a kmer not equal to k!"
 	kmer_counter[kmer] += 1
+	outfile.write(kmer)
+	outfile.write('\n')
+
 
 print "number of kmers identified:"
 print len(kmer_counter)
