@@ -102,8 +102,7 @@ with open(k1k2) as of:
         orientation = 'reverse'
         k1_start_inclusive = int(k2_end - k)
 	k2_end = k1_start
-        ins_seq = get_seq_btw_2coords(fasta,k1_start_inclusive,k2_end)
-        revcomp(ins_seq)
+        ins_seq = revcomp(get_seq_btw_2coords(fasta,k1_start_inclusive,k2_end))
       else:
         orientation = 'reverse_k1k2'
 	print >>sys.stderr, "reverse_k1k2"
