@@ -53,6 +53,8 @@ with open(k1k2) as of:
                 l = l.strip().split()
                 k1= l[0].lower()
 		print k1
+		rev_comp_k1 = str(Seq(k1).reverse_complement())
+		print rev_comp_k1
                 k2= l[1].lower()
 		print k2
 		fasta    = fasta_reader(in_fa)
@@ -73,5 +75,26 @@ with open(k1k2) as of:
 				
 			else:
 				out_file.write("%s,%s,%s,%s,%s,%s,%s \n" % (str(k1) + "_" + str(k2),k1_start,"0","0","0",isolate,orientation))	
+		elif kmer_check(fasta,rev_comp_k1):
+			orientation = "reverse"
+                        k1_start = kmer_check(fasta,rev_comp_k1)
+			k1_end = int(k1_start - k)
+			rev_comp_k2 = str(Seq(k2).reverse_complement())
+                        if kmer_check(fasta,rev_comp_k2): #Check to see if K2 is in the fasta
+                                k2_start = kmer_check(fasta,rev_comp_k2)
+				k2_start_inclusive = int(k2_start - 15)
+                                k2_end = int(k2_start)
+                                ins_seq = get_seq_btw_2coords(fasta,k2_start_inclusive,k1_end)
+				ins_seq = Seq(ins_seq).reverse_complement()
+                                ins_seq_length = len(ins_seq)
+                                if ins_seq_length < x:
+                                        out_file.write("%s,%s,%s,%s,%s,%s,%s,%s \n" % (str(rev_comp_k2) + "_" + str(rev_comp_k1),k2_start_inclusive,k1_end,ins_seq,ins_seq_length,isolate,orientation,str(k1) + "_" + str(k2)))
+                                else:
+                                        print "too long!"
+                                        print ins_seq_length
+
+                        else:
+                                out_file.write("%s,%s,%s,%s,%s,%s,%s,%s \n" % (str(rev_comp_k2) + "_" + str(rev_comp_k1),k2_start,"0","0","0",isolate,orientation,str(k1) + "_" + str(k2)))
+		
 
 of.close()
