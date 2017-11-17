@@ -3,7 +3,7 @@ from collections import Counter
 
 fn = sys.argv[1]
 k  = int(sys.argv[2])
-outfile_name = str(fn) + "_kmers.txt"
+outfile_name = str(fn) + "_kmers.freq1"
 outfile = open(outfile_name,"w")
 
 # hack to read in file                                                                                                                                                    
@@ -22,8 +22,6 @@ for i in range(len(seq)-k+1):
 	if len(kmer) != k:
 		print "found a kmer not equal to k!"
     	kmer_counter[kmer] += 1
-	outfile.write(kmer)
-	outfile.write('\n')
 
 # reverse and add reverse kmers                                                                                                                                           
 rc_map = dict(zip('ACGT', 'TGCA'))
@@ -37,9 +35,16 @@ for i in range(len(rc_seq)-k+1):
 	if len(kmer) != k:
 		print "found a kmer not equal to k!"
 	kmer_counter[kmer] += 1
-	outfile.write(kmer)
-	outfile.write('\n')
 
+singleton_count = 0
+for mer in kmer_counter:
+	if kmer_counter[mer] == 1:
+		outfile.write(kmer)
+		outfile.write('\n')
+		singleton_count += 1 
 
+outfile.close()
 print "number of kmers identified:"
 print len(kmer_counter)
+print "number of singletons"
+print singleton_count 
