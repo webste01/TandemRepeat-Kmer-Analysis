@@ -39,7 +39,7 @@ for i in range(len(rc_seq)-k+1):
 singleton_count = 0
 for mer in kmer_counter:
 	if kmer_counter[mer] == 1:
-		outfile.write(kmer)
+		outfile.write(mer)
 		outfile.write('\n')
 		singleton_count += 1 
 
