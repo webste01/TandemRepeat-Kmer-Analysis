@@ -6,11 +6,17 @@ library(magrittr)
 library(gplots)
 library(RColorBrewer)
 library(plyr)
+args <- commandArgs(TRUE)
+
+allele_cutoff<-args[1]
 
 tab<-read.csv("table4plotting.csv",header=T)
 
 #Remove first column (artifact from writing out or python pandas tab)
 tab<-tab[,-1]
+
+#Subset based on number of alleles
+tab<-tab[tab$alleles>allele_cutoff,]
 
 for (kmer in unique(tab$k1_k2)){
 
@@ -50,10 +56,11 @@ xlabels<-c(as.character(colsums$x),sum(colsums$x))
 
 n_mlst<-length(CT[,3:ncol(CT)])-1
 p+annotate("rect", xmin=n_mlst+1, xmax=n_mlst+2, ymin=0, ymax=length(unique(CT.m$Allele)),fill="white") + 
-annotate("text",x=n_mlst+1,y=c(seq(1:length(rowsums))),label=as.character(rowsums$x)) +
+annotate("text",x=n_mlst+1,y=c(seq(1:length(as.character(rowsums$x)))),label=as.character(rowsums$x)) +
+
 annotate("rect", xmin=0, xmax=n_mlst+1, ymin=0, ymax=0.5,fill="white") +
 annotate("text",x=c(seq(1:(n_mlst+1))),y=0.25,label=as.character(xlabels))
 
-ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p2)
+ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p)
 }
 
