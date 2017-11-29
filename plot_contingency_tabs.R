@@ -1,22 +1,28 @@
 library(grid)
+library(gridExtra)
+library(ggdendro)
 library(ggplot2)
 library(reshape2)
+library(ape)
 library(ggplot2)
 library(magrittr)
 library(gplots)
 library(RColorBrewer)
 library(plyr)
+require(gridBase)
+require(gtable)
 args <- commandArgs(TRUE)
 
+#Read in parameters from the command line
 allele_cutoff<-args[1]
 percentage_cutoff <- args[2]
 kmers_of_interest<-args[3]
 
-print(kmers_of_interest)
-mers_of_interest<-read.table(kmers_of_interest,header=F)
-print(mers_of_interest$V1)
+#allele_cutoff<-20
+#percentage_cutoff<-0.9
 
-print(percentage_cutoff)
+
+mers_of_interest<-read.table(kmers_of_interest,header=F)
 tab<-read.csv("table4plotting.csv",header=T)
 
 #Remove first column (artifact from writing out or python pandas tab)
@@ -27,7 +33,9 @@ tab<-tab[tab$alleles>allele_cutoff,]
 
 #for (kmer in unique(tab$k1_k2)){
 for (kmer in mers_of_interest$V1){
+#kmer<-"gatggagtagcaggtccaac_caacaggtgctagtgcaata"
 
+print(kmer)
 #Subset df for a kmer to generate individual plots
 tab_sub<-tab[tab$k1_k2 == kmer,]
 
@@ -35,52 +43,100 @@ tab_sub<-tab[tab$k1_k2 == kmer,]
 CT<-dcast(tab_sub,k1_k2*insertion_sequence~MLST,fill=0,length)
 
 #Make allele column
-CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep="_")
+CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep=".")
+CT$Allele<-as.numeric(CT$Allele)
 
 #Write out contingency table
 write.csv(CT,paste(kmer,"_contingency_table.csv",sep=""),row.names=F,quote=F)
 
+
+#Remove insertion sequence column
+CT<-CT[,-which(names(CT) %in% c("insertion_sequence","k1_k2"))]
+
+
 #Make heatmap
 CT.m<-melt(CT,id.vars = "Allele")
 
+#Create not in function
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+
 order<-read.table("order_of_mlst.txt",header=F)
-x_order<-c("k1_k2", "insertion_sequence",order$V2)
+x_order<-c(order$V2)
+missing_mlsts<-x_order[x_order %!in% CT.m$variable]
+
+#Make entries in CT.m for mlsts that are not represented by the kmers
+n_alleles<-length(unique(as.factor(CT.m$Allele)))
+n_rows2add<-n_alleles*length(missing_mlsts)
+unique_alleles<-as.factor(as.character(unique(as.factor(CT.m$Allele))))
+
+#Format data frame so that mlsts not represented by the kmers are present in the contingency tables
+datalist = list()
+for (i in (1:length(missing_mlsts))){
+	tmp<-data.frame(unique_alleles,rep(missing_mlsts[i],n_rows2add),rep(0,n_rows2add))
+	datalist[[i]] <- tmp
+}
+
+mlsts2add = do.call(rbind, datalist)
+colnames(mlsts2add)<-c("Allele","variable","value")
+mlsts2add$variable<-as.factor(mlsts2add$variable)
+CT.m<-rbind(CT.m,mlsts2add)
 CT.m<-CT.m[order(match(CT.m$variable,x_order)),]
 CT.m$variable<-factor(CT.m$variable,levels=CT.m$variable)
 
-nskip<- (length(unique(CT.m$Allele))*2)+1
-tmp<-CT.m[nskip:nrow(CT.m),]
-rowsums<-aggregate(as.numeric(tmp$value), by=list(Category=tmp$Allele), FUN=sum)
-colsums<-aggregate(as.numeric(tmp$value), by=list(Category=tmp$variable), FUN=sum)
-total=sum(colsums$x)
-print("number of isolates that are accounted for:")
-print(total)
-print("total number of isolates:")
-print(length(unique(tab$isolate)))
-n<-as.numeric(percentage_cutoff)*(length(unique(tab$isolate)))
-print("number of isolates that should be there:")
-print(n)
 
+#Get row and column sums for contingency matrix
+colsums<-aggregate(as.numeric(CT.m$value), by=list(Category=CT.m$Allele), FUN=sum)
+rowsums<-aggregate(as.numeric(CT.m$value), by=list(Category=CT.m$variable), FUN=sum)
+total=sum(colsums$x)
+print(total)
+
+#Merge in eburst data
+eburst<-read.table("eburst_groups.txt",header=T)
+tmp<-merge(CT.m,eburst,by.x="variable",by.y="ST",all.x=T)
+CT.m<-tmp
+CT.m[is.na(CT.m)] <- 0
+
+#Make labels to annotate table with eburst groups
+eburst_labs<-CT.m[,c("variable","eburst_group")]
+eburst_labs<-eburst_labs[!duplicated(eburst_labs), ]
+
+#Read tree data in
+phylo <- read.tree(file = "parsnp.tree")
+plot(phylo,show.tip.label =FALSE)
+
+#Make the contingencty tables
+n<-as.numeric(percentage_cutoff)*(length(unique(tab$isolate)))
+print(n)
 
 if (total > n){
 	xlabels<-c(as.character(colsums$x),sum(colsums$x))
-	n_mlst<-length(CT[,3:ncol(CT)])-1
-	p<-ggplot(CT.m[nskip:nrow(CT.m),], aes(x=variable,y=Allele))+
+	n_mlst<-length(unique(CT.m$variable))
+	p<-ggplot(CT.m, aes(x=as.factor(Allele),y=variable))+
 	geom_tile(aes(fill=as.numeric(value)))+
 	scale_fill_gradient(low = "white",high = "steelblue",name="Isolate Count",trans = "log") +
 	scale_x_discrete(position = "top") +
-	geom_text(aes(variable, label= value),size=6) +
-	ggtitle("MLST counts per allele") +
+	geom_text(aes(as.factor(Allele), label= value),size=8) +
+	ggtitle(paste("MLST counts per allele\n",total," total isolates",sep=" ")) +
 	theme_bw()  +
-	theme(axis.text.x=element_text(angle=45,hjust=-.25,size=16,face="bold")) +
-	theme(axis.text.y=element_text(size=16,face="bold")) +
+	theme(axis.text.x=element_text(angle=45,hjust=-.25,size=18)) +
+	theme(axis.text.y=element_text(size=22)) +
 	theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),axis.title=element_text(size=18,face="bold"),plot.title = element_text(size=20,face="bold")) +
-	labs(y="Allele",x="MLST") +
-	annotate("rect", xmin=n_mlst+1, xmax=n_mlst+2, ymin=0, ymax=length(unique(CT.m$Allele)),fill="white") + 
-	annotate("text",x=n_mlst+1,y=c(seq(1:length(as.character(rowsums$x)))),label=as.character(rowsums$x),size=10) +
-	annotate("rect", xmin=0, xmax=n_mlst+1, ymin=0, ymax=0.5,fill="white") +
-	annotate("text",x=c(seq(1:(n_mlst+1))),y=0.25,label=as.character(xlabels),size=10)
-	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p)
+	labs(x="Allele",y=" ") +
+	annotate("rect", xmin=n_alleles+1.2, xmax=n_alleles+2, ymin=-1, ymax=length(unique(CT.m$Allele))+1,fill="white") + 
+	annotate("text",x=n_alleles+1.2,y=c(seq(1:(n_mlst))),label=as.character(rowsums$x),size=8) +
+	annotate("rect", xmin=0, xmax=nrow(colsums)+1, ymin=-1.5, ymax=0.5,fill="white") +
+	annotate("text",x=c(seq(1:nrow(colsums))),y=-0.5,label=as.character(colsums$x),size=8) +
+        annotate("rect", xmin=-1, xmax=0, ymin=0, ymax=length(eburst_labs$eburst_group),fill="white") +
+	annotate("text",x=-0.48,y=c(seq(1:length(eburst_labs$eburst_group))),label=eburst_labs$eburst_group,size=8) 
+      	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p)
 }
 }
+
+#Convert the tree to R dendogram object
+#library(DECIPHER)
+#dend <- ReadDendrogram("parsnp.tree")
+#dx <- dendro_data(dend)
+#px <- ggdend(dx$segments)
+#subplot(px,p, nrows = 2, margin = 0.01)
 
