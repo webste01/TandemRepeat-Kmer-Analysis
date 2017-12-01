@@ -84,6 +84,26 @@ CT.m<-rbind(CT.m,mlsts2add)
 CT.m<-CT.m[order(match(CT.m$variable,x_order)),]
 CT.m$variable<-factor(CT.m$variable,levels=CT.m$variable)
 
+#get isolates that are not in the table
+mlst_file<-read.table("mlst_file.txt",header=T)
+dfs<-read.table("data_freeze_samples.txt")
+missing<-dfs[dfs$V1 %!in% tab_sub$isolate,]
+missing_samples<-tab[tab$isolate %in% missing,]
+missing_samples<-missing_samples[,c("isolate","MLST")]
+missing_samples<-missing_samples[!duplicated(missing_samples), ]
+
+#Create vector from missing samples
+missing_samples_tab<-table(missing_samples)
+sums_missing_samples<-data.frame(colSums(missing_samples_tab))
+sums_missing_samples["MLST"]<-row.names(sums_missing_samples)
+colnames(sums_missing_samples)<-c("count","MLST")
+x_order<-data.frame(x_order)
+missing_samples_merged<-merge(x_order, sums_missing_samples, by.y="MLST",by.x="x_order",all.x=TRUE)
+missing_samples_merged[is.na(missing_samples_merged)] <- 0
+missing_samples_merged<-missing_samples_merged[order(match(missing_samples_merged$x_order,x_order$x_order)),]
+
+
+
 
 #Get row and column sums for contingency matrix
 colsums<-aggregate(as.numeric(CT.m$value), by=list(Category=CT.m$Allele), FUN=sum)
@@ -128,7 +148,10 @@ if (total > n){
 	annotate("rect", xmin=0, xmax=nrow(colsums)+1, ymin=-1.5, ymax=0.5,fill="white") +
 	annotate("text",x=c(seq(1:nrow(colsums))),y=-0.5,label=as.character(colsums$x),size=8) +
         annotate("rect", xmin=-1, xmax=0, ymin=0, ymax=length(eburst_labs$eburst_group),fill="white") +
-	annotate("text",x=-0.48,y=c(seq(1:length(eburst_labs$eburst_group))),label=eburst_labs$eburst_group,size=8) 
+	annotate("text",x=-0.48,y=c(seq(1:length(eburst_labs$eburst_group))),label=eburst_labs$eburst_group,size=8) +
+
+annotate("rect", xmin=n_alleles+2, xmax=n_alleles+2.8, ymin=-1, ymax=length(unique(CT.m$Allele))+2,fill="white") +
+        annotate("text",x=n_alleles+2,y=c(seq(1:(n_mlst))),label=as.character(missing_samples_merged$count),size=8)
       	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p)
 }
 }
