@@ -21,6 +21,16 @@ for fasta in full_fasta_seq:
 tmp= os.path.basename(os.path.normpath(in_fa))
 isolate = str(tmp).split('.')[0]
 i=0
+
+
+candidate_kmers="candidate_need_alternatives.txt"
+kmers = []
+with open(candidate_kmers,'r') as kmer_file:
+	for l in kmer_file:
+		l = l.strip().split()
+		kmers.append(l[0])
+kmer_file.close()
+
 with open(ins_seq_file,'r') as ins_seq:
 	next(ins_seq)
         for l in ins_seq:
@@ -31,38 +41,39 @@ with open(ins_seq_file,'r') as ins_seq:
 		end_primer = int(int(l[2]) + 500)
 		kmer_pair = str(l[0])
 		orientation=str(l[6])
-		length_insertion_seq = end_ins_seq - start_ins_seq
-		length_primer_seq = end_primer - start_primer
-		if length_insertion_seq > 70:
-			i=i+1
-			out_name = str(isolate) +"_"+ str(i) + "_primer3_infile.txt"
-			with open(out_name, 'w') as out_file:
-				out_file.write("PRIMER_TASK=generic")
-		                out_file.write("\n")
-                		out_file.write("PRIMER_OPT_SIZE=20")
-                		out_file.write("\n")
-              			out_file.write("PRIMER_MIN_SIZE=20")
-            			out_file.write("\n")
-          			out_file.write("PRIMER_MAX_SIZE=21")
-        			out_file.write("\n")
-				out_file.write("SEQUENCE_ID="+kmer_pair)
-				out_file.write("\n")
-				out_file.write("PRIMER_PRODUCT_SIZE_RANGE="+str(length_insertion_seq)+"-"+str(length_primer_seq))
-                                out_file.write("\n")
-				end_window_start = int(length_primer_seq - 500)
-                                out_file.write("SEQUENCE_PRIMER_PAIR_OK_REGION_LIST=1,500,"+str(end_window_start)+",500;")
-				out_file.write("\n")
-				if orientation == "forward":	
-                                	seq = fa_string[start_primer:end_primer]
-					out_file.write("SEQUENCE_TEMPLATE="+seq)
+		if kmer_pair in kmers:
+			length_insertion_seq = end_ins_seq - start_ins_seq
+			length_primer_seq = end_primer - start_primer
+			if length_insertion_seq > 200:
+				i=i+1
+				out_name = str(isolate) +"_"+ str(i) + "_primer3_infile.txt"
+				with open(out_name, 'w') as out_file:
+					out_file.write("PRIMER_TASK=generic")
+		        	        out_file.write("\n")
+                			out_file.write("PRIMER_OPT_SIZE=20")
+                			out_file.write("\n")
+              				out_file.write("PRIMER_MIN_SIZE=20")
+            				out_file.write("\n")
+          				out_file.write("PRIMER_MAX_SIZE=21")
+        				out_file.write("\n")
+					out_file.write("SEQUENCE_ID="+kmer_pair)
 					out_file.write("\n")
-					out_file.write("=")
-					out_file.close()
-				else:
-					seq = fa_string[start_primer:end_primer]
-					rc_seq = str(Seq(seq).reverse_complement())
-                                        out_file.write("SEQUENCE_TEMPLATE="+rc_seq)
-                                        out_file.write("\n")
-                                        out_file.write("=")
-                                        out_file.close()					
+					out_file.write("PRIMER_PRODUCT_SIZE_RANGE="+str(length_insertion_seq)+"-"+str(length_primer_seq))
+                                	out_file.write("\n")
+					end_window_start = int(length_primer_seq - 500)
+                                	out_file.write("SEQUENCE_PRIMER_PAIR_OK_REGION_LIST=1,500,"+str(end_window_start)+",500;")
+					out_file.write("\n")
+					if orientation == "forward":	
+	                                	seq = fa_string[start_primer:end_primer]
+						out_file.write("SEQUENCE_TEMPLATE="+seq)
+						out_file.write("\n")
+						out_file.write("=")
+						out_file.close()
+					else:
+						seq = fa_string[start_primer:end_primer]
+						rc_seq = str(Seq(seq).reverse_complement())
+                                	        out_file.write("SEQUENCE_TEMPLATE="+rc_seq)
+                                	        out_file.write("\n")
+                                	        out_file.write("=")
+                                	        out_file.close()					
 ins_seq.close()
