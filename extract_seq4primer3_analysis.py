@@ -12,7 +12,7 @@ from Bio.Seq import Seq
 #Take in the set of tandem repeats, get 500bp on each side, format fasta for primer3
 in_fa          = sys.argv[1]
 ins_seq_file         = sys.argv[2]
-
+primer_length = sys.argv[3]
 
 full_fasta_seq = SeqIO.parse(open(in_fa),'fasta')
 for fasta in full_fasta_seq:
@@ -46,15 +46,15 @@ with open(ins_seq_file,'r') as ins_seq:
 			length_primer_seq = end_primer - start_primer
 			if length_insertion_seq > 200:
 				i=i+1
-				out_name = str(isolate) +"_"+ str(i) + "_primer3_infile.txt"
+				out_name = str(isolate) +"_"+ str(i) + "_primer3_infile" + primer_length +".txt"
 				with open(out_name, 'w') as out_file:
 					out_file.write("PRIMER_TASK=generic")
 		        	        out_file.write("\n")
-                			out_file.write("PRIMER_OPT_SIZE=20")
+                			out_file.write("PRIMER_OPT_SIZE="+primer_length)
                 			out_file.write("\n")
-              				out_file.write("PRIMER_MIN_SIZE=20")
+              				out_file.write("PRIMER_MIN_SIZE="+primer_length)
             				out_file.write("\n")
-          				out_file.write("PRIMER_MAX_SIZE=21")
+          				out_file.write("PRIMER_MAX_SIZE="+primer_length)
         				out_file.write("\n")
 					out_file.write("SEQUENCE_ID="+kmer_pair)
 					out_file.write("\n")
