@@ -31,7 +31,6 @@ tab<-tab[,-1]
 #Subset based on number of alleles
 tab<-tab[tab$alleles>allele_cutoff,]
 
-#for (kmer in unique(tab$k1_k2)){
 for (kmer in mers_of_interest$V1){
 #kmer<-"gatggagtagcaggtccaac_caacaggtgctagtgcaata"
 
@@ -39,8 +38,15 @@ print(kmer)
 #Subset df for a kmer to generate individual plots
 tab_sub<-tab[tab$k1_k2 == kmer,]
 
+if (nrow(tab_sub) >10){ 
+
+print("more than 10 rows")
+
 #Get counts of each MLST type for each kmer
 CT<-dcast(tab_sub,k1_k2*insertion_sequence~MLST,fill=0,length)
+
+print("dcast successful")
+
 
 #Make allele column
 CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep=".")
@@ -57,6 +63,8 @@ CT<-CT[,-which(names(CT) %in% c("insertion_sequence","k1_k2"))]
 #Make heatmap
 CT.m<-melt(CT,id.vars = "Allele")
 
+print("successful melt")
+
 #Create not in function
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
@@ -65,24 +73,32 @@ order<-read.table("order_of_mlst.txt",header=F)
 x_order<-c(order$V2)
 missing_mlsts<-x_order[x_order %!in% CT.m$variable]
 
-#Make entries in CT.m for mlsts that are not represented by the kmers
-n_alleles<-length(unique(as.factor(CT.m$Allele)))
-n_rows2add<-n_alleles*length(missing_mlsts)
-unique_alleles<-as.factor(as.character(unique(as.factor(CT.m$Allele))))
+if (length(missing_mlsts)!=0) {
+	n_alleles<-length(unique(as.factor(CT.m$Allele)))
+	n_rows2add<-n_alleles*length(missing_mlsts)
+	unique_alleles<-as.factor(as.character(unique(as.factor(CT.m$Allele))))
+	print("length missing_MLSTS")
+	print(length(missing_mlsts))
 
-#Format data frame so that mlsts not represented by the kmers are present in the contingency tables
-datalist = list()
-for (i in (1:length(missing_mlsts))){
-	tmp<-data.frame(unique_alleles,rep(missing_mlsts[i],n_rows2add),rep(0,n_rows2add))
-	datalist[[i]] <- tmp
+
+	#Format data frame so that mlsts not represented by the kmers are present in the contingency tables
+	datalist = list()
+	for (i in (1:length(missing_mlsts))){
+		tmp<-data.frame(unique_alleles,rep(missing_mlsts[i],n_rows2add),rep(0,n_rows2add))
+		datalist[[i]] <- tmp
+	}
+
+	mlsts2add = do.call(rbind, datalist)
+	colnames(mlsts2add)<-c("Allele","variable","value")
+	mlsts2add$variable<-as.factor(mlsts2add$variable)
+
+	CT.m<-rbind(CT.m,mlsts2add)
 }
 
-mlsts2add = do.call(rbind, datalist)
-colnames(mlsts2add)<-c("Allele","variable","value")
-mlsts2add$variable<-as.factor(mlsts2add$variable)
-CT.m<-rbind(CT.m,mlsts2add)
 CT.m<-CT.m[order(match(CT.m$variable,x_order)),]
 CT.m$variable<-factor(CT.m$variable,levels=CT.m$variable)
+
+
 
 #get isolates that are not in the table
 mlst_file<-read.table("mlst_file.txt",header=T)
@@ -121,10 +137,6 @@ CT.m[is.na(CT.m)] <- 0
 eburst_labs<-CT.m[,c("variable","eburst_group")]
 eburst_labs<-eburst_labs[!duplicated(eburst_labs), ]
 
-#Read tree data in
-phylo <- read.tree(file = "parsnp.tree")
-plot(phylo,show.tip.label =FALSE)
-
 #Make the contingencty tables
 n<-as.numeric(percentage_cutoff)*(length(unique(tab$isolate)))
 print(n)
@@ -132,12 +144,12 @@ print(n)
 if (total > n){
 	xlabels<-c(as.character(colsums$x),sum(colsums$x))
 	n_mlst<-length(unique(CT.m$variable))
-	p<-ggplot(CT.m, aes(x=as.factor(Allele),y=variable))+
+	p<-ggplot(CT.m, aes(x=Allele,y=variable))+
 	geom_tile(aes(fill=as.numeric(value)))+
 	scale_fill_gradient(low = "white",high = "steelblue",name="Isolate Count",trans = "log") +
 	scale_x_discrete(position = "top") +
 	geom_text(aes(as.factor(Allele), label= value),size=8) +
-	ggtitle(paste("MLST counts per allele\n",total," total isolates",sep=" ")) +
+	ggtitle(paste("MLST counts per allele\n",total," total isolates\n",kmer,sep=" ")) +
 	theme_bw()  +
 	theme(axis.text.x=element_text(angle=45,hjust=-.25,size=18)) +
 	theme(axis.text.y=element_text(size=22)) +
@@ -155,11 +167,4 @@ annotate("rect", xmin=n_alleles+2, xmax=n_alleles+2.8, ymin=-1, ymax=length(uniq
       	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p)
 }
 }
-
-#Convert the tree to R dendogram object
-#library(DECIPHER)
-#dend <- ReadDendrogram("parsnp.tree")
-#dx <- dendro_data(dend)
-#px <- ggdend(dx$segments)
-#subplot(px,p, nrows = 2, margin = 0.01)
-
+}
