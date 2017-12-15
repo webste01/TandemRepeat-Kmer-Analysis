@@ -5,15 +5,15 @@ import csv
 from Bio import SeqIO
 from Bio.Seq import Seq
 
-#GetGet the Tandem repeat plus ~500 bp flanking region
-#Define regions where unique kmers are located and restrict primer3 search to those regions. Primer3 will then try to pick a good combo in just those regions and you only have to check afterwards that they are both in the unique kmer set.
+#Get the insertion sequence plus ~500 bp flanking region to put into a file that can be run through primer3
 
-
-#Take in the set of tandem repeats, get 500bp on each side, format fasta for primer3
-in_fa          = sys.argv[1]
-ins_seq_file         = sys.argv[2]
+#Read in the fasta file, insertion sequence file, desired primer length, and the set of candidate kmers to find alternative kmers for
+in_fa = sys.argv[1]
+ins_seq_file = sys.argv[2]
 primer_length = sys.argv[3]
+candidate_kmers = sys.argv[4]
 
+#Parse fasta file
 full_fasta_seq = SeqIO.parse(open(in_fa),'fasta')
 for fasta in full_fasta_seq:
                 fa_string = str(fasta.seq)
@@ -22,8 +22,7 @@ tmp= os.path.basename(os.path.normpath(in_fa))
 isolate = str(tmp).split('.')[0]
 i=0
 
-
-candidate_kmers=sys.argv[4]
+#Read in candidate kmers
 kmers = []
 with open(candidate_kmers,'r') as kmer_file:
 	for l in kmer_file:
@@ -31,6 +30,7 @@ with open(candidate_kmers,'r') as kmer_file:
 		kmers.append(l[0])
 kmer_file.close()
 
+#Only get insertion sequences flanked by the candidate kmers, and get coordinates and sequence for 500bp flanking regions
 with open(ins_seq_file,'r') as ins_seq:
 	next(ins_seq)
         for l in ins_seq:
