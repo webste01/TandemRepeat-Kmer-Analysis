@@ -23,7 +23,8 @@ kmers_of_interest<-args[3]
 
 
 mers_of_interest<-read.table(kmers_of_interest,header=F)
-tab<-read.csv("table4plotting.csv",header=T)
+table4plotting<-args[4]
+tab<-read.csv(table4plotting,header=T)
 
 #Remove first column (artifact from writing out or python pandas tab)
 tab<-tab[,-1]
@@ -49,8 +50,8 @@ print("dcast successful")
 
 
 #Make allele column
-CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep=".")
-CT$Allele<-as.numeric(CT$Allele)
+CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep="_")
+CT$Allele<-as.factor(CT$Allele)
 
 #Write out contingency table
 write.csv(CT,paste(kmer,"_contingency_table.csv",sep=""),row.names=F,quote=F)
@@ -93,6 +94,10 @@ if (length(missing_mlsts)!=0) {
 	mlsts2add$variable<-as.factor(mlsts2add$variable)
 
 	CT.m<-rbind(CT.m,mlsts2add)
+
+}
+else if (length(missing_mlsts)==0){
+	n_alleles<-length(unique(as.factor(CT.m$Allele)))
 }
 
 CT.m<-CT.m[order(match(CT.m$variable,x_order)),]
@@ -148,7 +153,7 @@ if (total > n){
 	geom_tile(aes(fill=as.numeric(value)))+
 	scale_fill_gradient(low = "white",high = "steelblue",name="Isolate Count",trans = "log") +
 	scale_x_discrete(position = "top") +
-	geom_text(aes(as.factor(Allele), label= value),size=8) +
+	geom_text(aes(Allele, label= value),size=8) +
 	ggtitle(paste("MLST counts per allele\n",total," total isolates\n",kmer,sep=" ")) +
 	theme_bw()  +
 	theme(axis.text.x=element_text(angle=45,hjust=-.25,size=18)) +
