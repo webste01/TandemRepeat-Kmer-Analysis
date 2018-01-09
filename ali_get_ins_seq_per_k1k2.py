@@ -8,10 +8,9 @@ from Bio.Seq import Seq
 
 in_fa = sys.argv[1] #input fasta sequence
 k1k2 = sys.argv[2]
-k=15
 
 #Limit to the insertion size
-x=2000
+x=int(sys.argv[3])
 
 #Extract isolate ID from fastafile name
 tmp= os.path.basename(os.path.normpath(in_fa))
@@ -57,7 +56,7 @@ out_file.write("k1_k2,k1_start,k2_end,insertion_sequence,insertion_sequence_leng
 
 with open(k1k2) as of:
   for l in of:
-    l = l.strip().split()
+    l = l.strip().split("_")
     k1= l[0].lower()
     k2= l[1].lower()
     k1_start = None
@@ -86,7 +85,7 @@ with open(k1k2) as of:
       k2_end = forward_k2_check
       if k1_start < k2_end:
         orientation = 'forward'
-        k1_start_inclusive = int(k1_start - k)
+        k1_start_inclusive = int(k1_start - len(str(k1)))
         ins_seq = get_seq_btw_2coords(fasta,k1_start_inclusive,k2_end)
       else:
         orientation = 'forward_k2k1'
@@ -100,7 +99,7 @@ with open(k1k2) as of:
       k2_end = reverse_k2_check
       if k2_end < k1_start:
         orientation = 'reverse'
-        k1_start_inclusive = int(k2_end - k)
+        k1_start_inclusive = int(k2_end - len(str(k2)))
 	k2_end = k1_start
         ins_seq = revcomp(get_seq_btw_2coords(fasta,k1_start_inclusive,k2_end))
       else:
