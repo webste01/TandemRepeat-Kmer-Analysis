@@ -152,7 +152,8 @@ if (total > n){
 	p<-ggplot(CT.m, aes(x=Allele,y=variable))+
 	geom_tile(aes(fill=as.numeric(value)))+
 	scale_fill_gradient(low = "white",high = "steelblue",name="Isolate Count",trans = "log") +
-	scale_x_discrete(position = "top") +
+	scale_x_discrete(position = "top",expand=c(0,0)) +
+	coord_cartesian(xlim = c(-2,length(unique(CT.m$Allele))+4),ylim=c(-1,n_mlst+0.5)) +
 	geom_text(aes(Allele, label= value),size=8) +
 	ggtitle(paste("MLST counts per allele\n",total," total isolates\n",kmer,sep=" ")) +
 	theme_bw()  +
@@ -166,10 +167,9 @@ if (total > n){
 	annotate("text",x=c(seq(1:nrow(colsums))),y=-0.5,label=as.character(colsums$x),size=8) +
         annotate("rect", xmin=-1, xmax=0, ymin=0, ymax=length(eburst_labs$eburst_group),fill="white") +
 	annotate("text",x=-0.48,y=c(seq(1:length(eburst_labs$eburst_group))),label=eburst_labs$eburst_group,size=8) +
-
-annotate("rect", xmin=n_alleles+2, xmax=n_alleles+2.8, ymin=-1, ymax=length(unique(CT.m$Allele))+2,fill="white") +
+	annotate("rect", xmin=n_alleles+2, xmax=n_alleles+2.8, ymin=-1, ymax=length(unique(CT.m$Allele))+2,fill="white") +
         annotate("text",x=n_alleles+2,y=c(seq(1:(n_mlst))),label=as.character(missing_samples_merged$count),size=8)
-      	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 28, plot=p)
+      	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 20, plot=p)
 }
 }
 }
