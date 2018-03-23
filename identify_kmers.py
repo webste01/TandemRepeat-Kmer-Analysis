@@ -3,7 +3,7 @@ from collections import Counter
 
 fn = sys.argv[1]
 k  = int(sys.argv[2])
-outfile_name = str(fn) + "_kmers.freq1"
+outfile_name = str(fn) + "_"+str(k)+"_kmers.freq1"
 outfile = open(outfile_name,"w")
 
 # hack to read in file                                                                                                                                                    

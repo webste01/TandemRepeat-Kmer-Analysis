@@ -9,8 +9,7 @@ in_fa          = sys.argv[1]
 in_trf         = sys.argv[2]
 in_kmers          = sys.argv[3]
 flanking_bp = int(sys.argv[4])
-#flanking_bp    = int(2000)
-k=int(15)
+k=int(sys.argv[5])
 
 tmp= os.path.basename(os.path.normpath(in_fa))
 isolate = str(tmp).split('.')[0]
