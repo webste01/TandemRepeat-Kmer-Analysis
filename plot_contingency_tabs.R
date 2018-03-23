@@ -169,7 +169,7 @@ if (total > n){
 	annotate("text",x=-0.48,y=c(seq(1:length(eburst_labs$eburst_group))),label=eburst_labs$eburst_group,size=8) +
 	annotate("rect", xmin=n_alleles+2, xmax=n_alleles+2.8, ymin=-1, ymax=length(unique(CT.m$Allele))+2,fill="white") +
         annotate("text",x=n_alleles+2,y=c(seq(1:(n_mlst))),label=as.character(missing_samples_merged$count),size=8)
-      	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 34, height = 20, plot=p)
+      	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 38, height = 28, plot=p)
 }
 }
 }
