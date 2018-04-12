@@ -56,6 +56,12 @@ CT$Allele<-as.factor(CT$Allele)
 #Write out contingency table
 write.csv(CT,paste(kmer,"_contingency_table.csv",sep=""),row.names=F,quote=F)
 
+tmp<-merge(tab,CT,by.x="insertion_sequence",by.y="insertion_sequence")
+tmp2<-tmp[,c("isolate","length_allele_mapping","Allele","allele","k1_k2.x")]
+colnames(tmp2)<-c("isolate","original_allele_mapping","updated_allele_mapping","allele","kmer")
+write.csv(tmp2,paste(kmer,"_ins_seq_mapping.csv",sep=""),row.names=F,quote=F)
+rm(tmp)
+rm(tmp2)
 
 #Remove insertion sequence column
 CT<-CT[,-which(names(CT) %in% c("insertion_sequence","k1_k2"))]
@@ -170,6 +176,8 @@ if (total > n){
 	annotate("rect", xmin=n_alleles+2, xmax=n_alleles+2.8, ymin=-1, ymax=length(unique(CT.m$Allele))+2,fill="white") +
         annotate("text",x=n_alleles+2,y=c(seq(1:(n_mlst))),label=as.character(missing_samples_merged$count),size=8)
       	ggsave(filename=paste(kmer,"_cont_tab_logscale.pdf",sep=""), width = 38, height = 28, plot=p)
+      	ggsave(filename=paste(kmer,"_cont_tab_logscale.svg",sep=""), width = 38, height = 28, plot=p)
+	
 }
 }
 }
