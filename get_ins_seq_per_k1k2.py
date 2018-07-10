@@ -5,9 +5,11 @@ import sys
 import bisect
 from Bio import SeqIO
 from Bio.Seq import Seq
+import re
 
 in_fa = sys.argv[1] #input fasta sequence
 k1k2 = sys.argv[2]
+
 
 #Limit to the insertion size
 x=int(sys.argv[3])
@@ -22,21 +24,30 @@ def fasta_reader(in_fa):
                 fa_string = str(fasta.seq)
         return fa_string
 
+#def kmer_check(seq,mer):
+#        index = 0
+#	print mer
+#        positions = []
+#        while index < len(seq):
+#                index = seq.find(mer, index)
+#                if index == -1:
+#                        break
+#                index += len(mer)
+#                positions.append(index)
+#        if len(positions) == 1:
+#                return positions[0]
+#        elif len(positions) > 1:
+#                return None
+#        else:
+#                return None
+
 def kmer_check(seq,mer):
-        index = 0
-        positions = []
-        while index < len(seq):
-                index = seq.find(mer, index)
-                if index == -1:
-                        break
-                index += len(mer)
-                positions.append(index)
-        if len(positions) == 1:
-                return positions[0]
-        elif len(positions) > 1:
-                return None
-        else:
-                return None
+	regex = re.compile(mer)
+	match = regex.search(seq)
+	if match:
+		return int(match.start())
+	else:
+		return None
 
 
 def revcomp(kmer):
