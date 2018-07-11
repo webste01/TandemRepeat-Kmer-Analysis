@@ -1,4 +1,5 @@
 library(grid)
+library(stringr)
 library(gridExtra)
 library(ggdendro)
 library(ggplot2)
@@ -39,6 +40,7 @@ print(kmer)
 #Subset df for a kmer to generate individual plots
 tab_sub<-tab[tab$k1_k2 == kmer,]
 
+
 if (nrow(tab_sub) >10){ 
 
 print("more than 10 rows")
@@ -46,15 +48,24 @@ print("more than 10 rows")
 #Get counts of each MLST type for each kmer
 CT<-dcast(tab_sub,k1_k2*insertion_sequence~MLST,fill=0,length)
 
-print("dcast successful")
+#Make allele column and name it by sorting by length
+CT["length"] <- nchar(as.character(CT$insertion_sequence))
 
+#Order by length
+CT<-CT[order(CT$length),]
 
-#Make allele column
+#Re-do rownames
+rownames(CT)<-1:nrow(CT) 
+
 CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep="_")
 CT$Allele<-as.factor(CT$Allele)
 
+#Remove length column
+CT<-CT[ , -which(names(CT) %in% c("length"))] 
+
 #Write out contingency table
 write.csv(CT,paste(kmer,"_contingency_table.csv",sep=""),row.names=F,quote=F)
+
 
 tmp<-merge(tab,CT,by.x="insertion_sequence",by.y="insertion_sequence")
 tmp2<-tmp[,c("isolate","length_allele_mapping","Allele","allele","k1_k2.x")]
