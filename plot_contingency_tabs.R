@@ -49,7 +49,7 @@ print("more than 10 rows")
 CT<-dcast(tab_sub,k1_k2*insertion_sequence~MLST,fill=0,length)
 
 #Make allele column and name it by sorting by length
-CT["length"] <- nchar(as.character(CT$insertion_sequence))
+CT["length"] <- nchar(as.character(CT$insertion_sequence)) + nchar(as.character(CT$k1_k2))-1
 
 #Order by length
 CT<-CT[order(CT$length),]
@@ -57,7 +57,7 @@ CT<-CT[order(CT$length),]
 #Re-do rownames
 rownames(CT)<-1:nrow(CT) 
 
-CT["Allele"]<-paste(nchar(as.character(CT$insertion_sequence)),as.character(row.names(CT)),sep="_")
+CT["Allele"]<-paste((nchar(as.character(CT$insertion_sequence)) + nchar(as.character(CT$k1_k2))-1),as.character(row.names(CT)),sep="_")
 CT$Allele<-as.factor(CT$Allele)
 
 #Remove length column
