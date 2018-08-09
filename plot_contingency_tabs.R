@@ -30,6 +30,9 @@ tab<-read.csv(table4plotting,header=T)
 #Remove first column (artifact from writing out or python pandas tab)
 tab<-tab[,-1]
 
+#Remove duplicates
+tab<-tab[!duplicated(tab), ]
+
 #Subset based on number of alleles
 tab<-tab[tab$alleles>allele_cutoff,]
 
