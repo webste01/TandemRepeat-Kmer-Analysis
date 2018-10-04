@@ -1,0 +1,130 @@
+library(ggplot2)
+library(dplyr)
+library(cowplot)
+
+dat<-read.table("alignment_data.txt",header=F)
+colnames(dat)<- c("Isolate","Allele","N_Reads_Mapping","Total_Reads")
+dat["Percentage"]<-(dat$N_Reads_Mapping / dat$Total_Reads)*100
+dat["Percentage"]<-round(dat$Percentage, digits=2)
+
+#Merge in strain type
+st_map<-read.table("ST_map.txt",header=T)
+dat2<-merge(dat,st_map,by.x="Isolate",by.y="Isolate")
+
+#filter based on at least 3 reads mapping 
+dat2<-dat2[dat2$N_Reads_Mapping>3,]
+
+#Function to emulate the ggplot2 colors
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+    hcl(h = hues, l = 65, c = 100)[1:n]
+    }
+#Specify the color for each allele, make a dataframe with the mapping
+n_colors = gg_color_hue(length(unique(dat2$Allele)))
+
+allele_coloring<-data.frame(unique(dat2$Allele),n_colors)
+colnames(allele_coloring)<-c("Allele","Color")
+
+#Manually change color for "off_target"
+allele_coloring<-allele_coloring[allele_coloring$Allele!="off_target",]
+tmp_df<-data.frame("off_target","#B8B8B8")
+colnames(tmp_df)<-c("Allele","Color")
+allele_coloring<-rbind(allele_coloring,tmp_df)
+
+#Add colors for expected alleles if they are not in the observed set (black)
+'%!in%' <- function(x,y)!('%in%'(x,y))
+missing_alleles<-unique(dat2[dat2$Expected_allele %!in% allele_coloring$Allele,"Expected_allele"])
+tmp_df2<-data.frame(missing_alleles)
+tmp_df2["Color"]<-"#000000"
+colnames(tmp_df2)<-c("Allele","Color")
+allele_coloring<-rbind(allele_coloring,tmp_df2)
+rm(tmp_df)
+rm(tmp_df2)
+
+#Merge colors back into dataframe
+dat3<-merge(dat2,allele_coloring,by.x="Allele",by.y="Allele")
+dat3<-merge(dat3,allele_coloring,by.x="Expected_allele",by.y="Allele")
+colnames(dat3)<-c("Expected_allele","Observed_allele","Isolate","N_Reads_Mapping","Total_Reads","Percentage","ST","Observed_color","Expected_color")
+
+#Sort dat3
+dat3<-arrange(dat3,desc(Percentage))
+dat3$Observed_allele<-factor(dat3$Observed_allele, levels=rev(levels(dat3$Observed_allele)))
+
+tmp<-dat3[,c("Observed_color","Observed_allele")]
+colnames(tmp)<-c("color","allele")
+tmp2<-dat3[,c("Expected_color","Expected_allele")]
+colnames(tmp2)<-c("color","allele")
+allele_cols<-rbind(tmp,tmp2)
+allele_cols<-unique(allele_cols)
+rm(tmp)
+rm(tmp2)
+
+l_allele_cols<-split(as.character(allele_cols$color),allele_cols$allele,drop=TRUE)
+ul_allele_cols<-unlist(l_allele_cols)
+cols<-ul_allele_cols
+
+#Create PDF and SVG
+pdf("ST_vs_total_reads.pdf")
+p<-ggplot(dat3,aes(x=as.factor(ST),y=as.numeric(Percentage),fill=Observed_allele)) + 
+geom_bar(stat='identity',position='stack') +
+scale_fill_manual(values=cols)+
+ggtitle("Clonal PacBio Amplicons") +                          
+xlab("Strain Type") + 
+ylab("% Total Reads") +
+coord_flip()
+plot(p)
+dev.off()
+ggsave(file="ST_vs_total_reads.svg",plot=p,width=10,height=8)
+
+
+#Create majority observed vs. expected dotplot
+dat4<-dat3[dat3$Observed_allele != "off_target",]
+dat5<-aggregate(Percentage ~ Isolate, data = dat4, max)
+dat6<-merge(dat5,dat4,by.x=c("Isolate","Percentage"),by.y=c("Isolate","Percentage"))
+
+dat7<-dat6[,c("Percentage","Observed_allele","Expected_allele","ST","Observed_color","Expected_color")]
+
+tmp<-dat7[,c("Observed_allele","ST","Observed_color")]
+tmp["x_coord"]<-rep(1,nrow(tmp))
+tmp["Allele_type"]<-rep("Observed",nrow(tmp))
+colnames(tmp)<-c("Allele","ST","Proper_Color","x_coord","Allele_type")
+
+tmp2<-dat7[,c("Expected_allele","ST","Expected_color")]
+tmp2["x_coord"]<-rep(2,nrow(tmp2))
+tmp2["Allele_type"]<-rep("Expected",nrow(tmp2))
+colnames(tmp2)<-c("Allele","ST","Proper_Color","x_coord","Allele_type")
+
+dat8<-rbind(tmp,tmp2)
+
+pdf("observed_expected.pdf")
+p2<-ggplot(dat8,aes(x=x_coord, y=as.factor(ST),label=Allele))+
+geom_point(aes(colour=factor(Allele))) +
+scale_colour_manual(values = cols) +
+geom_text(label=dat8$Allele,colour=as.character(dat8$Proper_Color),vjust = 0, nudge_y = 0.1) +
+theme_bw()+
+coord_fixed(ratio = 2,expand = TRUE) +
+ggtitle("Observed  Expected") +
+xlim(0.5,2.5) +
+xlab(" ") +
+ylab(" ") +
+theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x = element_blank(),axis.text.x = element_blank())
+plot(p2)
+dev.off()
+
+pdf("combined.pdf")
+theme_set(theme_cowplot(font_size=12)) # reduce default font size
+plot_grid(p,p2,ncol=2,align='h')
+dev.off()
+
+pdf("combined.pdf")
+prow <- plot_grid( p + theme(legend.position="none"),
+           p2 + theme(legend.position="none"),
+           align = 'vh',
+           hjust = -1,
+           nrow = 1,
+	   rel_widths=c(1.2,0.8),
+	   rel_heights=c(1,0.5)
+           )
+legend <- get_legend(p)
+plot_grid( prow, legend, rel_widths = c(2,0.5))
+dev.off()
